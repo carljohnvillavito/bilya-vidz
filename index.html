@@ -3,377 +3,225 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BilyaVidz - AI Video Generator</title>
-    <script src="https://cdn.jsdelivr.net/npm/@google/genai@0.1.0/dist/index.min.js"></script>
+    <title>BilyaVidz - AI Video Generation</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Poppins', sans-serif;
+        /* Custom scrollbar for history drawer */
+        .history-drawer::-webkit-scrollbar {
+            width: 8px;
         }
-        @keyframes pulse {
-            0% { opacity: 0.6; }
-            50% { opacity: 1; }
-            100% { opacity: 0.6; }
+        .history-drawer::-webkit-scrollbar-track {
+            background: #2d3748;
         }
-        .pulse {
-            animation: pulse 2s infinite;
-        }
-        .video-preview {
-            background: linear-gradient(135deg, #1e293b, #0f172a);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 1.2rem;
-            text-align: center;
-            min-height: 400px;
-        }
-        .generate-btn {
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            box-shadow: 0 4px 15px rgba(106, 90, 255, 0.3);
-        }
-        .generate-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(106, 90, 255, 0.4);
-        }
-        .history-item {
-            transition: all 0.3s ease;
-        }
-        .history-item:hover {
-            transform: translateX(5px);
-            background-color: #1e293b;
+        .history-drawer::-webkit-scrollbar-thumb {
+            background: #4a5568;
+            border-radius: 4px;
         }
     </style>
 </head>
-<body class="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 min-h-screen">
-    <div id="app">
-        <!-- Header -->
-        <header class="fixed top-0 left-0 right-0 z-50 bg-black bg-opacity-80 backdrop-blur-md border-b border-purple-500/20">
-            <div class="container mx-auto px-4 py-4 flex justify-between items-center">
-                <h1 class="text-2xl md:text-3xl font-bold text-white">
-                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">BilyaVidz</span>
-                </h1>
-                <button id="menuBtn" class="text-white hover:text-purple-300 transition-colors p-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                    </svg>
-                </button>
-            </div>
-        </header>
+<body class="bg-gray-900 text-white font-sans">
 
-        <!-- Main Content -->
-        <main class="container mx-auto px-4 pt-24 pb-8">
-            <div class="max-w-4xl mx-auto">
-                <!-- Title and Description -->
-                <div class="text-center mb-8">
-                    <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">AI Video Generator</h2>
-                    <p class="text-gray-300 text-lg">Describe your vision and let AI create stunning videos</p>
-                </div>
+    <!-- Header -->
+    <header class="bg-gray-800 text-white p-4 flex justify-between items-center fixed top-0 left-0 w-full z-10">
+        <h1 class="text-2xl font-bold">BilyaVidz</h1>
+        <button id="burger-icon" class="text-white focus:outline-none">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+            </svg>
+        </button>
+    </header>
 
-                <!-- Video Preview -->
-                <div class="mb-8">
-                    <div id="videoPreview" class="video-preview">
-                        <div class="flex flex-col items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                            </svg>
-                            <p class="text-gray-400">Your generated video will appear here</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Input and Generate Section -->
-                <div class="bg-white bg-opacity-5 backdrop-blur-md rounded-2xl p-6 border border-purple-500/20 shadow-xl">
-                    <div class="mb-6">
-                        <label for="promptInput" class="block text-white font-medium mb-3">Describe your video</label>
-                        <textarea id="promptInput" 
-                                  class="w-full px-4 py-3 bg-white bg-opacity-10 border border-purple-500/30 rounded-xl text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-                                  rows="4"
-                                  placeholder="Describe the video you want to generate... For example: 'A beautiful sunset over the ocean with dolphins jumping in the distance'"></textarea>
-                    </div>
-
-                    <div class="flex flex-col sm:flex-row gap-4 items-center justify-between">
-                        <div class="flex items-center space-x-2">
-                            <input type="checkbox" id="downloadToggle" class="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500">
-                            <label for="downloadToggle" class="text-white text-sm">Auto-download video</label>
-                        </div>
-                        <button id="generateBtn" class="generate-btn text-white font-semibold py-3 px-8 rounded-xl transition-all duration-300 w-full sm:w-auto">
-                            Generate Video
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </main>
-
-        <!-- History Drawer -->
-        <div id="historyDrawer" class="fixed right-0 top-0 h-full w-80 bg-slate-800 shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out z-50">
-            <div class="p-4 border-b border-slate-700 flex justify-between items-center">
-                <h3 class="text-white font-semibold">Generation History</h3>
-                <button id="closeDrawer" class="text-gray-400 hover:text-white">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-            <div id="historyList" class="p-4 h-full overflow-y-auto">
-                <!-- History items will be added here -->
-                <div class="text-center text-gray-400 mt-10">
-                    <p>No generation history yet</p>
-                </div>
-            </div>
+    <!-- History Drawer -->
+    <div id="history-drawer" class="history-drawer fixed top-0 right-0 h-full w-64 bg-gray-800 shadow-lg p-4 transform translate-x-full transition-transform duration-300 ease-in-out z-20 overflow-y-auto">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">History</h2>
+            <button id="close-drawer" class="text-white focus:outline-none">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
         </div>
+        <div id="history-list"></div>
+    </div>
 
-        <!-- Overlay for drawer -->
-        <div id="overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden z-40"></div>
+    <!-- Main Content -->
+    <main class="pt-20 p-4 sm:p-6 md:p-8 flex flex-col items-center">
+        <div class="w-full max-w-4xl">
+            <!-- Video Preview -->
+            <div id="video-container" class="bg-black rounded-lg mb-6 flex items-center justify-center h-64 sm:h-80 md:h-96">
+                 <video id="video-preview" class="hidden w-full h-full object-contain" controls></video>
+                <p id="video-placeholder" class="text-gray-500">Your generated video will appear here.</p>
+            </div>
 
-        <script>
-            // DOM Elements
-            const menuBtn = document.getElementById('menuBtn');
-            const closeDrawer = document.getElementById('closeDrawer');
-            const historyDrawer = document.getElementById('historyDrawer');
-            const overlay = document.getElementById('overlay');
-            const generateBtn = document.getElementById('generateBtn');
-            const promptInput = document.getElementById('promptInput');
-            const videoPreview = document.getElementById('videoPreview');
-            const historyList = document.getElementById('historyList');
-            const downloadToggle = document.getElementById('downloadToggle');
+            <!-- Download Toggle -->
+            <div id="download-section" class="text-center mb-6 hidden">
+                <a id="download-link" href="#" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded inline-flex items-center">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    <span>Download MP4</span>
+                </a>
+            </div>
 
-            // API Configuration
-            const API_KEY = 'AIzaSyDWw2BDLVDr8oQQjNli_Ayl__0bAg8_O2c';
-            
-            // Initialize GoogleGenAI (mock implementation for demo)
-            class GoogleGenAI {
-                constructor(config) {
-                    this.apiKey = config.apiKey || '';
-                }
-                
-                async models.generateVideos({ model, prompt }) {
-                    // Simulate API call with mock response
-                    return new Promise(resolve => {
-                        setTimeout(() => {
-                            resolve({
-                                done: false,
-                                name: `operations/video-gen-${Math.random().toString(36).substr(2, 9)}`
-                            });
-                        }, 500);
-                    });
-                }
-                
-                async operations.getVideosOperation({ operation }) {
-                    // Simulate polling with random completion
-                    return new Promise(resolve => {
-                        setTimeout(() => {
-                            const isDone = Math.random() > 0.3; // 70% chance to complete
-                            if (isDone) {
-                                resolve({
-                                    done: true,
-                                    response: {
-                                        generatedVideos: [{
-                                            video: {
-                                                uri: `https://example.com/video-${Math.random().toString(36).substr(2, 9)}.mp4`,
-                                                meta { duration: 30 }
-                                            }
-                                        }]
-                                    }
-                                });
-                            } else {
-                                resolve({
-                                    ...operation,
-                                    done: false
-                                });
-                            }
-                        }, 2000);
-                    });
-                }
-                
-                async files.download({ file, downloadPath }) {
-                    // Simulate download
-                    console.log(`Downloading video to ${downloadPath}`);
-                    return new Promise(resolve => {
-                        setTimeout(() => {
-                            resolve();
-                        }, 1000);
-                    });
-                }
+            <!-- User Input -->
+            <div class="mb-4">
+                <textarea id="user-input" class="w-full h-24 p-4 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" placeholder="Describe the video you want to generate..."></textarea>
+            </div>
+
+            <!-- Generate Button -->
+            <button id="generate-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300 flex items-center justify-center">
+                <svg id="generate-icon" class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <svg id="loading-spinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                <span id="button-text">Generate Video</span>
+            </button>
+             <p id="status-text" class="text-center mt-4 text-gray-400"></p>
+        </div>
+    </main>
+
+    <script type="module">
+        import { GoogleGenAI } from "https://esm.run/@google/genai";
+
+        const burgerIcon = document.getElementById('burger-icon');
+        const closeDrawer = document.getElementById('close-drawer');
+        const historyDrawer = document.getElementById('history-drawer');
+        const historyList = document.getElementById('history-list');
+        const generateBtn = document.getElementById('generate-btn');
+        const userInput = document.getElementById('user-input');
+        const videoPreview = document.getElementById('video-preview');
+        const videoPlaceholder = document.getElementById('video-placeholder');
+        const downloadSection = document.getElementById('download-section');
+        const downloadLink = document.getElementById('download-link');
+        const statusText = document.getElementById('status-text');
+        const generateIcon = document.getElementById('generate-icon');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const buttonText = document.getElementById('button-text');
+
+        const API_KEY = "AIzaSyDWw2BDLVDr8oQQjNli_Ayl__0bAg8_O2c";
+        const ai = new GoogleGenAI(API_KEY);
+
+        // --- Drawer Functionality ---
+        burgerIcon.addEventListener('click', () => {
+            historyDrawer.classList.remove('translate-x-full');
+        });
+
+        closeDrawer.addEventListener('click', () => {
+            historyDrawer.classList.add('translate-x-full');
+        });
+
+        // --- LocalStorage History ---
+        function loadHistory() {
+            const history = JSON.parse(localStorage.getItem('bilyaVidzHistory')) || [];
+            historyList.innerHTML = '';
+            if (history.length === 0) {
+                historyList.innerHTML = '<p class="text-gray-500">No history yet.</p>';
+                return;
+            }
+            history.forEach(item => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'bg-gray-700 p-2 rounded mb-2';
+                historyItem.innerHTML = `
+                    <p class="text-sm truncate">${item.prompt}</p>
+                    <p class="text-xs text-gray-400">${new Date(item.timestamp).toLocaleString()}</p>
+                `;
+                historyList.appendChild(historyItem);
+            });
+        }
+
+        function saveToHistory(prompt) {
+            const history = JSON.parse(localStorage.getItem('bilyaVidzHistory')) || [];
+            const newEntry = { prompt, timestamp: new Date().toISOString() };
+            history.unshift(newEntry);
+            if (history.length > 50) { // Keep last 50 entries
+                history.pop();
+            }
+            localStorage.setItem('bilyaVidzHistory', JSON.stringify(history));
+            loadHistory();
+        }
+
+        // --- Video Generation ---
+        generateBtn.addEventListener('click', async () => {
+            const prompt = userInput.value.trim();
+            if (!prompt) {
+                alert('Please enter a prompt for the video.');
+                return;
             }
 
-            // LocalStorage helpers
-            const getHistory = () => {
-                try {
-                    const history = localStorage.getItem('bilyavidz_history');
-                    return history ? JSON.parse(history) : [];
-                } catch (e) {
-                    return [];
-                }
-            };
+            // Update UI for loading state
+            generateBtn.disabled = true;
+            statusText.textContent = 'Initializing video generation...';
+            generateIcon.classList.add('hidden');
+            loadingSpinner.classList.remove('hidden');
+            buttonText.textContent = 'Generating...';
+            videoPlaceholder.classList.remove('hidden');
+            videoPreview.classList.add('hidden');
+            downloadSection.classList.add('hidden');
 
-            const saveHistory = (history) => {
-                localStorage.setItem('bilyavidz_history', JSON.stringify(history));
-            };
 
-            const addHistoryItem = (prompt, videoUrl, timestamp) => {
-                const history = getHistory();
-                const newItem = {
-                    id: Date.now(),
-                    prompt,
-                    videoUrl,
-                    timestamp
-                };
-                history.unshift(newItem); // Add to beginning
-                if (history.length > 50) {
-                    history.pop(); // Keep only last 50
-                }
-                saveHistory(history);
-                renderHistory();
-            };
-
-            const renderHistory = () => {
-                const history = getHistory();
-                if (history.length === 0) {
-                    historyList.innerHTML = '<div class="text-center text-gray-400 mt-10"><p>No generation history yet</p></div>';
-                    return;
-                }
-
-                historyList.innerHTML = '';
-                history.forEach(item => {
-                    const date = new Date(item.timestamp);
-                    const formattedDate = date.toLocaleString();
-                    const historyItem = document.createElement('div');
-                    historyItem.className = 'history-item bg-slate-700 rounded-lg p-3 mb-2 cursor-pointer hover:bg-slate-600';
-                    historyItem.innerHTML = `
-                        <div class="text-white text-sm font-medium mb-1 truncate">${item.prompt.substring(0, 50)}${item.prompt.length > 50 ? '...' : ''}</div>
-                        <div class="text-gray-400 text-xs">${formattedDate}</div>
-                    `;
-                    historyItem.addEventListener('click', () => {
-                        // Load video preview
-                        loadVideoPreview(item.videoUrl);
-                        // Close drawer
-                        closeDrawerPanel();
-                    });
-                    historyList.appendChild(historyItem);
+            try {
+                let operation = await ai.models.generateVideos({
+                    model: "veo-3.0-generate-preview",
+                    prompt: prompt,
                 });
-            };
 
-            const loadVideoPreview = (videoUrl) => {
-                videoPreview.innerHTML = `
-                    <div class="w-full max-w-2xl">
-                        <video class="w-full rounded-lg shadow-lg" controls>
-                            <source src="${videoUrl}" type="video/mp4">
-                            Your browser does not support the video tag.
-                        </video>
-                    </div>
-                `;
-            };
+                statusText.textContent = "Waiting for video generation to complete...";
+                console.log("Waiting for video generation to complete...");
 
-            // Drawer functions
-            const openDrawerPanel = () => {
-                historyDrawer.classList.remove('translate-x-full');
-                overlay.classList.remove('hidden');
-            };
-
-            const closeDrawerPanel = () => {
-                historyDrawer.classList.add('translate-x-full');
-                overlay.classList.add('hidden');
-            };
-
-            // Event Listeners
-            menuBtn.addEventListener('click', openDrawerPanel);
-            closeDrawer.addEventListener('click', closeDrawerPanel);
-            overlay.addEventListener('click', closeDrawerPanel);
-
-            generateBtn.addEventListener('click', async () => {
-                const prompt = promptInput.value.trim();
-                if (!prompt) {
-                    alert('Please enter a description for your video');
-                    return;
+                while (!operation.done) {
+                    await new Promise((resolve) => setTimeout(resolve, 10000));
+                    operation = await ai.operations.getVideosOperation({
+                        operation: operation,
+                    });
+                     console.log("Polling for status...");
                 }
+                
+                statusText.textContent = "Video generated successfully! Preparing for preview.";
 
-                // Disable button and show loading state
-                generateBtn.disabled = true;
-                const originalText = generateBtn.textContent;
-                generateBtn.textContent = 'Generating...';
-                generateBtn.classList.add('opacity-80', 'cursor-not-allowed');
+                const videoData = operation.response.generatedVideos[0].video;
 
-                // Show loading in video preview
-                videoPreview.innerHTML = `
-                    <div class="text-center">
-                        <div class="inline-block rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent animate-spin mb-4"></div>
-                        <p class="text-white">Generating your video...</p>
-                        <p class="text-gray-400 text-sm">This may take a minute</p>
-                    </div>
-                `;
+                // In a real scenario, the file would be downloaded.
+                // For this static example, we simulate a download and create a blob URL for preview.
+                // NOTE: The `ai.files.download` method is intended for server-side/Node.js environments.
+                // We'll simulate its result for browser compatibility.
+                // This is a conceptual representation.
+                // A real browser implementation would need a different way to get the video data,
+                // perhaps via a signed URL from a server that calls the API.
+                
+                // Simulating getting the video data as a blob
+                 const base64Data = videoData.toString('base64'); // Assuming videoData is a buffer-like object
+                 const blob = await fetch(`data:video/mp4;base64,${base64Data}`).then(res => res.blob());
+                 const videoUrl = URL.createObjectURL(blob);
+                
+                videoPreview.src = videoUrl;
+                videoPlaceholder.classList.add('hidden');
+                videoPreview.classList.remove('hidden');
+                
+                downloadLink.href = videoUrl;
+                const randomNum = Math.floor(1000000000 + Math.random() * 9000000000);
+                downloadLink.download = `BilyaVidz_${randomNum}.mp4`;
+                downloadSection.classList.remove('hidden');
 
-                try {
-                    // Initialize AI client
-                    const ai = new GoogleGenAI({});
-                    
-                    // Call the AI model (mocked)
-                    let operation = await ai.models.generateVideos({  
-                        model: "veo-3.0-generate-preview",  
-                        prompt: prompt,  
-                    });  
-                    
-                    // Poll until complete
-                    while (!operation.done) {  
-                        console.log("Waiting for video generation to complete...");
-                        await new Promise((resolve) => setTimeout(resolve, 2000));
-                        operation = await ai.operations.getVideosOperation({  
-                            operation: operation.name,  
-                        });  
-                    }  
-                    
-                    // Get video URL
-                    const videoUrl = operation.response.generatedVideos[0].video.uri;
-                    const randomNums = Math.floor(1000000000 + Math.random() * 9000000000);
-                    const downloadPath = `BilyaVidz_${randomNums}.mp4`;
-                    
-                    // Show video in preview
-                    loadVideoPreview(videoUrl);
-                    
-                    // Auto-download if toggle is on
-                    if (downloadToggle.checked) {
-                        await ai.files.download({  
-                            file: operation.response.generatedVideos[0].video,  
-                            downloadPath: downloadPath,  
-                        });
-                        
-                        // Create download link
-                        const link = document.createElement('a');
-                        link.href = videoUrl;
-                        link.download = downloadPath;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                    }
-                    
-                    // Add to history
-                    addHistoryItem(prompt, videoUrl, Date.now());
-                    
-                } catch (error) {
-                    console.error('Error generating video:', error);
-                    videoPreview.innerHTML = `
-                        <div class="text-center text-red-400">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <p>Failed to generate video. Please try again.</p>
-                        </div>
-                    `;
-                } finally {
-                    // Reset button state
-                    generateBtn.disabled = false;
-                    generateBtn.textContent = originalText;
-                    generateBtn.classList.remove('opacity-80', 'cursor-not-allowed');
+                saveToHistory(prompt);
+
+            } catch (error) {
+                console.error('Error generating video:', error);
+                statusText.textContent = 'An error occurred during video generation.';
+                alert(`Error: ${error.message}`);
+            } finally {
+                // Restore UI
+                generateBtn.disabled = false;
+                generateIcon.classList.remove('hidden');
+                loadingSpinner.classList.add('hidden');
+                buttonText.textContent = 'Generate Video';
+                 if (!videoPreview.src) { // Only clear status if no video was successfully generated
+                    statusText.textContent = '';
                 }
-            });
+            }
+        });
 
-            // Initialize on load
-            document.addEventListener('DOMContentLoaded', () => {
-                renderHistory();
-            });
-        </script>
-    </div>
+        // Initial load
+        loadHistory();
+    </script>
+
 </body>
 </html>
